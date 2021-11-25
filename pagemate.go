@@ -12,14 +12,23 @@ import (
 	"github.com/headzoo/surf/browser"
 )
 
+// PageMateClient is the base class for accessing a PageMate paging interface
 type PageMateClient struct {
-	BaseURL       string
-	Username      string
-	Password      string
-	loggedIn      bool
+	// BaseURL is the base URL under which the web interface is accessed.
+	// This should not have a trailing slash
+	BaseURL string
+	// Username represents the username for the client
+	Username string
+	// Password represents the password for the lcient
+	Password string
+	// loggedIn is the internal logged in status of the browser
+	loggedIn bool
+	// browserObject is the internap surf representation
 	browserObject *browser.Browser
 }
 
+// NewPageMateClient creates a new client with the specified base URL,
+// username, and password.
 func NewPageMateClient(baseURL, username, password string) PageMateClient {
 	return PageMateClient{
 		BaseURL:  baseURL,
@@ -28,6 +37,8 @@ func NewPageMateClient(baseURL, username, password string) PageMateClient {
 	}
 }
 
+// Login logs into the web instance unless it has already happened.
+// Returns an error if anything goes wrong.
 func (p *PageMateClient) Login() error {
 	if p.loggedIn {
 		return nil
@@ -52,7 +63,7 @@ func (p *PageMateClient) Login() error {
 	if err != nil {
 		return err
 	}
-	f.Input("loginSubscriber", p.Username)
+	f.Input("loginSubscriber", strings.ToUpper(p.Username))
 	f.Input("password", p.Password)
 
 	if f.Submit() != nil {
@@ -67,6 +78,8 @@ func (p *PageMateClient) Login() error {
 	return nil
 }
 
+// FindRecipientGroups scrapes recipient groups and descriptions from the list
+// kept in PageMate.
 func (p *PageMateClient) FindRecipientGroups(query string) (map[string]string, error) {
 	r := map[string]string{}
 
@@ -109,6 +122,8 @@ func (p *PageMateClient) FindRecipientGroups(query string) (map[string]string, e
 	return r, nil
 }
 
+// SendMessage sends given a message, group, groupDescription, and an optional
+// comment.
 func (p *PageMateClient) SendMessage(message string, group, groupDescription string, comment string) error {
 	if !p.loggedIn {
 		err := p.Login()
