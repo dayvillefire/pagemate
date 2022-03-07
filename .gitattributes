@@ -1,1 +1,2 @@
 pagemate_test.go filter=git-crypt diff=git-crypt
+cmd/pagemate/.env filter=git-crypt diff=git-crypt
