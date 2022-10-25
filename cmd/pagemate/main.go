@@ -19,6 +19,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"strings"
 
 	"github.com/dayvillefire/pagemate"
@@ -26,25 +27,25 @@ import (
 )
 
 var (
+	action = flag.String("action", "send", "Action (send, list)")
 	target = flag.String("to", "", "Default destination")
 )
 
 func main() {
 	flag.Parse()
-	message := strings.TrimSpace(strings.Join(flag.Args(), " "))
-	if message == "" {
-		panic("no message!")
+
+	switch *action {
+	case "list":
+		break
+	case "send":
+		break
+	default:
+		flag.PrintDefaults()
+		return
 	}
+
 	var env map[string]string
 	env, err := godotenv.Read()
-
-	to := strings.TrimSpace(strings.ToUpper(*target))
-	if to == "" {
-		if _, ok := env["TO"]; !ok {
-			panic("no target")
-		}
-		to = strings.TrimSpace(strings.ToUpper(env["TO"]))
-	}
 
 	url := env["URL"]
 	if url == "" {
@@ -54,6 +55,31 @@ func main() {
 	pass := env["PASS"]
 
 	pm := pagemate.NewPageMateClient(url, user, pass)
+
+	if *action == "list" {
+		groups, err := pm.FindRecipientGroups("")
+		if err != nil {
+			panic(err)
+		}
+		for k, v := range groups {
+			fmt.Printf("%s: %s\n", k, v)
+		}
+		return
+	}
+
+	message := strings.TrimSpace(strings.Join(flag.Args(), " "))
+	if message == "" {
+		panic("no message!")
+	}
+
+	to := strings.TrimSpace(strings.ToUpper(*target))
+	if to == "" {
+		if _, ok := env["TO"]; !ok {
+			panic("no target")
+		}
+		to = strings.TrimSpace(strings.ToUpper(env["TO"]))
+	}
+
 	groups, err := pm.FindRecipientGroups(to)
 	if err != nil {
 		panic(err)

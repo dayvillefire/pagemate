@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"sync"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/headzoo/surf"
@@ -96,9 +97,14 @@ func (p *PageMateClient) Login() error {
 }
 
 // FindRecipientGroups scrapes recipient groups and descriptions from the list
-// kept in PageMate.
+// kept in PageMate. A blank parameter will list all groups.
 func (p *PageMateClient) FindRecipientGroups(query string) (map[string]string, error) {
 	r := map[string]string{}
+
+	q := query
+	if q == "" {
+		q = "*"
+	}
 
 	if !p.loggedIn {
 		err := p.Login()
@@ -113,7 +119,7 @@ func (p *PageMateClient) FindRecipientGroups(query string) (map[string]string, e
 	if err != nil {
 		return r, err
 	}
-	f.Input("objectname", query)
+	f.Input("objectname", q)
 
 	if f.Submit() != nil {
 		return r, err
@@ -122,6 +128,8 @@ func (p *PageMateClient) FindRecipientGroups(query string) (map[string]string, e
 	if strings.Contains(p.browserObject.Body(), "Error: Invalid") {
 		return r, errors.New("Invalid query")
 	}
+
+	rLock := &sync.Mutex{}
 
 	p.browserObject.Dom().Find("table.labels tbody tr").Each(func(_ int, s *goquery.Selection) {
 		var k, v string
@@ -132,7 +140,9 @@ func (p *PageMateClient) FindRecipientGroups(query string) (map[string]string, e
 			v = strings.TrimSpace(s3.Text())
 		})
 		if k != "" && v != "" {
+			rLock.Lock()
 			r[k] = v
+			rLock.Unlock()
 		}
 	})
 
